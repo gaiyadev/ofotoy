@@ -1,0 +1,4 @@
+{
+    "APP_DB_CONNECTION": "mongodb://localhost:27017/instagram",
+    "JWT_SECRET_KEY": "In_jwt_secretKey"
+}
