@@ -1,4 +1,4 @@
-const config = require('config');
+require('dotenv').config();
 const mongoose = require('mongoose');
 
 const ConnectDb = async () => {
@@ -6,7 +6,8 @@ const ConnectDb = async () => {
         {
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            useFindAndModify: true
+            useCreateIndex: true,
+
         }).
         then(() => console.log('Connected to Database Successfully...'))
         .catch(err => console.error('Failed Could not connect to Database', err));

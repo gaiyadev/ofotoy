@@ -1,27 +1,30 @@
 const mongoose = require('mongoose');
 require('../database/db');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 const UserSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
+        minlength: 4,
+        maxlength: 11,
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        maxlength: 255,
     },
     phone: {
-        type: Number,
+        type: String,
         required: true,
         unique: true,
     },
     password: {
         type: String,
         required: true,
-        min: 6,
-        max: 540
+        minlength: 6,
     },
     reg_date: {
         type: Date,
@@ -32,12 +35,30 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
 
-module.exports.newUser = (newUser, callback) => {
-    bcrypt.hash(newUser.password, 10, (err, hash) => {
+module.exports.newUser = async (newUser, callback) => {
+    await bcrypt.hash(newUser.password, 10, (err, hash) => {
         if (err) throw err;
         newUser.password = hash;  //set hash password
         newUser.save(callback); //create New User
     });
+    // Send a mail to the register user
+    // let transporter = nodemailer.createTransport({
+    //     service: 'Gmail',
+    //     auth: {
+    //         user: process.env.AUTH_EMAIL,
+    //         pass: process.env.AUTH_PASSWORD,
+    //     }
+    // });
+    // let mailOptions = {
+    //     from: process.env.AUTH_EMAIL,
+    //     to: newUser.email,
+    //     subject: 'ofotoy',
+    //     text: "You have register successfully"
+    // };
+    // transporter.sendMail(mailOptions, (err) => {
+    //     if (err) throw err;
+    //     console.log("message Sent Successfully!!" + newUser.email);
+    // });
 }
 
 
