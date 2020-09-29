@@ -1,7 +1,16 @@
 const mongoose = require('mongoose');
-require('../database/db');
+require('../../database/db');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const sgTransport = require('nodemailer-sendgrid-transport');
+const { ObjectId } = mongoose.Schema.Types;
+
+const transporter = nodemailer.createTransport(sgTransport({
+    auth: {
+        api_key: 'api key here'
+    }
+}));
+
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -21,11 +30,38 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    fullName: {
+        type: String,
+        maxlength: 255,
+        minlength: 4,
+    },
+    location: {
+        type: String,
+        maxlength: 255,
+    },
+    dob: {
+        type: Date,
+    },
+    profile_image: {
+        type: String,
+    },
     password: {
         type: String,
         required: true,
         minlength: 6,
     },
+    resetToken: {
+        type: String,
+    },
+    expiresToken: {
+        type: Date
+    },
+    followers: [
+        {
+            type: ObjectId,
+            ref: "User"
+        }
+    ],
     reg_date: {
         type: Date,
         default: Date.now
