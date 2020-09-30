@@ -6,6 +6,8 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
+const multer = require('multer');
+const fs = require("fs");
 
 const transporter = nodemailer.createTransport(sgTransport({
     auth: {
@@ -236,6 +238,33 @@ exports.new_password = (req, res) => {
  * USER COMPLETE REGISTRATION TO THE SYSTEM WHEN LOGIN
  * ================================================================================================= *
  */
+// file upload code
+
+const storage = multer.diskStorage({ //multers disk storage settings
+    destination: function (req, file, cb) {
+        cb(null, './public/uploads/')
+    },
+    limits: {
+        fileSize: 5000000
+    },
+    filename: function (req, file, cb) {
+        let datetimestamp = Date.now();
+        let pic = file.fieldname + '-' + datetimestamp + '.' + file.originalname.split('.')[file.originalname.split('.').length - 1];
+        cb(null, pic);
+    },
+    fileFilter: (req, file, cb) => {
+        // allow images only
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+            console.log('Only image are allowed.');
+        }
+        cb(null, true);
+    },
+});
+
+const uploadSingle = multer({
+    storage: storage
+}).single('profile_image');
+
 exports.complete_user_registration = async (req, res) => {
     const { dob, fullName, location } = req.body;
     const id = req.params.userId;
@@ -248,12 +277,17 @@ exports.complete_user_registration = async (req, res) => {
         dob: dob,
         fullName: fullName,
         location: location,
+        profile_image: pic
     });
     if (error) {
         return res.status(400).json({
             error: error.details[0].message,
         });
     }
+    uploadSingle(req, res, (err) => {
+        if (err) return res.json.status(400)({ error_code: 1, err_desc: err });
+        res.json(req.file);
+    });
     await User.findByIdAndUpdate(id).then(user => {
         if (!user) {
             return res.status(400).json({
