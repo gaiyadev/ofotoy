@@ -1,5 +1,5 @@
-const User = require('../../models/user/user');
-const BookPhotography = require('../../models/user/book');
+const Photographer = require('../../models/photographer/photographer');
+const Post = require('../../models/photographer/post');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
@@ -14,10 +14,10 @@ const transporter = nodemailer.createTransport(sgTransport({
 }));
 
 /** ===============================================================================================
- * USER REGISTRATION TO THE SYSTEM
+ * PHOTOGRAPHER REGISTRATION TO THE SYSTEM
  * ================================================================================================= *
  */
-exports.user_registration = async (req, res) => {
+exports.photographer_registration = async (req, res) => {
     const { username, email, phone, password } = req.body;
     const schema = Joi.object({
         username: Joi.string().min(4).max(11).required(),
@@ -36,18 +36,18 @@ exports.user_registration = async (req, res) => {
             error: error.details[0].message,
         });
     }
-    await User.findOne({ email: email }).then(user => {
-        if (user) return res.status(400).json({ error: 'User already exist with the given email' });
-        const newUser = new User({
+    await Photographer.findOne({ email: email }).then(photographer => {
+        if (photographer) return res.status(400).json({ error: 'Photographer already exist with the given email' });
+        const newPhotographer = new Photographer({
             username: username,
             email: email,
             phone: phone,
             password: password,
         });
-        User.newUser(newUser, (err, user) => {
+        Photographer.newPhotographer(newPhotographer, (err, photographer) => {
             if (err) return err;
             // success login ... Generating jwt for auth
-            jwt.sign({ _id: user._id, email: user.email, username: user.username, phone: user.phone },
+            jwt.sign({ _id: photographer._id, email: photographer.email, username: photographer.username, phone: photographer.phone },
                 process.env.JWT_SECRET,
                 {
                     expiresIn: 3600
@@ -55,11 +55,11 @@ exports.user_registration = async (req, res) => {
                     if (err) throw err;
                     return res.json({
                         token,
-                        user: {
-                            _id: user._id,
-                            email: user.email,
-                            username: user.username,
-                            phone: user.phone
+                        photographer: {
+                            _id: photographer._id,
+                            email: photographer.email,
+                            username: photographer.username,
+                            phone: photographer.phone
                         },
                         message: "Account created successfully"
                     });
@@ -83,7 +83,7 @@ exports.user_registration = async (req, res) => {
  * USER LOGIN TO THE SYSTEM
  * ================================================================================================= *
  */
-exports.user_login = async (req, res) => {
+exports.photographer_login = async (req, res) => {
     const { phone, email, password } = req.body;
     const schema = Joi.object({
         password: Joi.string().min(6).max(255).required()
@@ -97,15 +97,15 @@ exports.user_login = async (req, res) => {
             error: error.details[0].message,
         });
     }
-    await User.find().or([{ email: email }, { phone: phone }]).then(user => {
-        if (!user) return res.status(400).json({ error: 'Username or password is invalid' });
-        User.comparePassword(password, user[0]['password'], (err, isMatch) => {
+    await Photographer.find().or([{ email: email }, { phone: phone }]).then(photographer => {
+        if (!photographer) return res.status(400).json({ error: 'Username or password is invalid' });
+        Photographer.comparePassword(password, photographer[0]['password'], (err, isMatch) => {
             if (err) throw err;
             if (!isMatch) {
                 return res.status(400).json({ error: "Mobile Number or Password is invalid" });
             } else {
                 // success login ... Generating jwt for auth
-                jwt.sign({ _id: user[0]['_id'], email: user[0]['email'], username: user[0]['username'], phone: user[0]['phone'] },
+                jwt.sign({ _id: photographer[0]['_id'], email: photographer[0]['email'], username: photographer[0]['username'], phone: photographer[0]['phone'] },
                     process.env.JWT_SECRET,
                     {
                         expiresIn: 3600
@@ -113,11 +113,11 @@ exports.user_login = async (req, res) => {
                         if (err) throw err;
                         return res.json({
                             token,
-                            user: {
-                                _id: user[0]['_id'],
-                                email: user[0]['email'],
-                                username: user[0]['username'],
-                                phone: user[0]['phone']
+                            photographer: {
+                                _id: photographer[0]['_id'],
+                                email: photographer[0]['email'],
+                                username: photographer[0]['username'],
+                                phone: photographer[0]['phone']
                             },
                             message: "LogIn successfully"
                         });
@@ -128,10 +128,10 @@ exports.user_login = async (req, res) => {
 }
 
 /** ===============================================================================================
- * USER CHANGE PASSWORD WHEN LOGIN TO THE SYSTEM
+ * PHOTOGRAPHER CHANGE PASSWORD WHEN LOGIN TO THE SYSTEM
  * ================================================================================================= *
  */
-exports.user_change_password = async (req, res) => {
+exports.photographer_change_password = async (req, res) => {
     const { password } = req.body;
     const schema = Joi.object({
         password: Joi.string().min(6).max(255).required()
@@ -146,19 +146,19 @@ exports.user_change_password = async (req, res) => {
         });
     }
     const newPassword = req.body.password;
-    await User.findOne({ _id: req.params.id })
-        .then(user => {
-            if (!user) {
+    await Photographer.findOne({ _id: req.params.id })
+        .then(photographer => {
+            if (!photographer) {
                 return res.status(422).json({
                     error: "User doesn't exist"
                 });
             }
             bcrypt.hash(newPassword, 10).then(hashPassword => {
-                user.password = hashPassword;
-                user.save().then(saveUser => {
+                photographer.password = hashPassword;
+                photographer.save().then(savePhotographer => {
                     return res.json({
                         message: "Password changed successfully",
-                        saveUser,
+                        savePhotographer,
                     });
                 })
             });
@@ -167,23 +167,23 @@ exports.user_change_password = async (req, res) => {
 
 
 /** ===============================================================================================
- * USER FORGOT PASSWORD LINK TO BE SEND
+ * PHOTOGRAPHER FORGOT PASSWORD LINK TO BE SEND
  * ================================================================================================= *
  */
-exports.user_reset_password = async (req, res) => {
+exports.photographer_reset_password = async (req, res) => {
     await crypto.randomBytes(32, (err, buffer) => {
         if (err) throw err;
         const token = buffer.toString('hex');
-        User.findOne({ email: req.body.email })
-            .then(user => {
-                if (!user) {
+        Photographer.findOne({ email: req.body.email })
+            .then(photographer => {
+                if (!photographer) {
                     return res.status(400).json({
-                        error: 'No user is associated with this email'
+                        error: 'No photographer is associated with this email'
                     });
                 }
-                user.resetToken = token;
-                user.expiresToken = Date.now() + 360000;
-                user.save().then(result => {
+                photographer.resetToken = token;
+                photographer.expiresToken = Date.now() + 360000;
+                photographer.save().then(result => {
                     transporter.sendMail({
                         to: user.email,
                         from: 'isukue@gmail.com',
@@ -204,27 +204,27 @@ exports.user_reset_password = async (req, res) => {
 
 
 /** ===============================================================================================
- * USER UPDATE PASSWORD FROM THE LINK SENT
+ * PHOTOGRAPHER UPDATE PASSWORD FROM THE LINK SENT
  * ================================================================================================= *
  */
-exports.new_password = (req, res) => {
+exports.photographer_new_password = (req, res) => {
     const newPassword = req.body.password;
     const sentToken = req.body.token;
-    User.findOne({ resetToken: sentToken, expiresToken: { $gt: Date.now() } })
-        .then(user => {
-            if (!user) {
+    Photographer.findOne({ resetToken: sentToken, expiresToken: { $gt: Date.now() } })
+        .then(photographer => {
+            if (!photographer) {
                 return res.status(403).json({
                     error: "Try again. session ezpired"
                 });
             }
             bcrypt.hash(newPassword, 10).then(hashPassword => {
-                user.password = hashPassword;
-                user.resetToken = undefined;
-                user.expiresToken = undefined;
-                user.save().then(saveUser => {
+                photographer.password = hashPassword;
+                photographer.resetToken = undefined;
+                photographer.expiresToken = undefined;
+                photographer.save().then(savePhotographer => {
                     return res.json({
                         message: "Password changed successfully",
-                        saveUser
+                        savePhotographer
                     });
                 })
             });
@@ -233,12 +233,12 @@ exports.new_password = (req, res) => {
 }
 
 /** ===============================================================================================
- * USER COMPLETE REGISTRATION TO THE SYSTEM WHEN LOGIN
+ * PHOTOGRAPHER COMPLETE REGISTRATION TO THE SYSTEM WHEN LOGIN
  * ================================================================================================= *
  */
 exports.complete_user_registration = async (req, res) => {
     const { dob, fullName, location } = req.body;
-    const id = req.params.userId;
+    const id = req.params.photographerId;
     const schema = Joi.object({
         dob: Joi.required(),
         fullName: Joi.string().min(4).max(255).required(),
@@ -254,19 +254,19 @@ exports.complete_user_registration = async (req, res) => {
             error: error.details[0].message,
         });
     }
-    await User.findByIdAndUpdate(id).then(user => {
-        if (!user) {
+    await Photographer.findByIdAndUpdate(id).then(photographer => {
+        if (!photographer) {
             return res.status(400).json({
                 error: "User not found",
             });
         }
-        user.dob = dob;
-        user.location = location;
-        user.fullName = fullName
-        user.save();
+        photographer.dob = dob;
+        photographer.location = location;
+        photographer.fullName = fullName
+        photographer.save();
         return res.json({
             message: "Regitration completed successfully",
-            user
+            photographer
         });
     }).catch(err => {
         return res.status(400).json({
@@ -276,26 +276,25 @@ exports.complete_user_registration = async (req, res) => {
 }
 
 /** ===============================================================================================
- * BOOK FOR A PHOTOGRAPHY SESSION
+ * FETCH PHOTOGRAPHY BOOKINGS
  * ================================================================================================= *
  */
-exports.book_photographer = async (req, res) => {
-    const bookedBy = req.params.bookId;
-    // const photographerBooked;
-    const { email, phone, fullName, location, time } = req.body;
+exports.photographer_bookings = async (req, res) => {
+
+}
+
+/** ===============================================================================================
+ * POst A PICTURE (10 only)
+ * ================================================================================================= *
+ */
+exports.post_picture = async (req, res) => {
+    const postedBy = 0;
+    const { description } = req.body;
     const schema = Joi.object({
-        email: Joi.string().required().email(),
-        phone: Joi.required(),
-        fullName: Joi.string().required(),
-        location: Joi.string().required(),
-        time: Joi.string().required(),
+        description: Joi.string().required(),
     });
     const { error } = schema.validate({
-        email: email,
-        phone: phone,
-        location: location,
-        time: time,
-        fullName: fullName,
+        description: description,
     });
     if (error) {
         return res.status(400).json({
@@ -303,28 +302,34 @@ exports.book_photographer = async (req, res) => {
         });
     }
     //
-    await BookPhotography.findOne({ _id: bookedBy }).then(user => {
-        console.log(user);
-        const newBook = new BookPhotography({
-            email: email,
-            phone: phone,
-            fullName: fullName,
-            time: time,
-            location: location,
-            bookedBy: bookedBy,
-            photographerBooked: photographerBooked
+    const newPost = new Post({
+        description: description,
+        postedBy: postedBy,
+    });
+    await Post.BookPhotography(newPost, (err, post) => {
+        if (err) return err;
+        return res.status(200).json({
+            status: "Sucessful",
+            post
         });
-        BookPhotography.BookPhotography(newBook, (err, book) => {
-            if (err) return err;
-            return res.status(200).json({
-                status: "Sucessful",
-                book
-            });
 
+    });
+}
+
+/** ===============================================================================================
+ * FEtch All PICTURE (10 only)
+ * ================================================================================================= *
+ */
+exports.fetch_all_post = async (req, res) => {
+    await Post.find().then(post => {
+        return res.status(200).json({
+            status: "Sucessful",
+            post
         });
     }).catch(err => {
-        return res.status(400).json({
-            error: err,
+        return res.status(200).json({
+            status: "fail",
+            error: err
         });
-    });
+    })
 }

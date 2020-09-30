@@ -4,12 +4,12 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
 const { ObjectId } = mongoose.Schema.Types;
+
 const transporter = nodemailer.createTransport(sgTransport({
     auth: {
         api_key: 'api key here'
     }
 }));
-
 
 const BookPhotographySchema = new mongoose.Schema({
     email: {

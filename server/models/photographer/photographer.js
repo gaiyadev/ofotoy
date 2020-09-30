@@ -11,7 +11,8 @@ const transporter = nodemailer.createTransport(sgTransport({
     }
 }));
 
-const UserSchema = new mongoose.Schema({
+
+const PhotographerSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
@@ -58,7 +59,7 @@ const UserSchema = new mongoose.Schema({
     followers: [
         {
             type: ObjectId,
-            ref: "User"
+            ref: "Photographer"
         }
     ],
     reg_date: {
@@ -67,21 +68,22 @@ const UserSchema = new mongoose.Schema({
     }
 });
 
-const User = mongoose.model('User', UserSchema);
-module.exports = User;
+const Photographer = mongoose.model('Photographer', PhotographerSchema);
+module.exports = Photographer;
 
-module.exports.newUser = async (newUser, callback) => {
-    await bcrypt.hash(newUser.password, 10, (err, hash) => {
+module.exports.newPhotographer = async (newPhotographer, callback) => {
+    await bcrypt.hash(newPhotographer.password, 10, (err, hash) => {
         if (err) throw err;
-        newUser.password = hash;  //set hash password
-        newUser.save(callback); //create New User
+        newPhotographer.password = hash;  //set hash password
+        newPhotographer.save(callback); //create New Photographer
     });
+    //mail
     // transporter.sendMail({
-    //     to: newUser.email,
+    //     to: newPhotographer.email,
     //     from: 'isukue@gmail.com',
     //     subject: 'Account created succesfully',
     //     html: `<p>
-    //           You account has being created successfully..(ofotoy)
+    //           You account has being created successfully
     //          </p>`
     // });
 }
