@@ -53,4 +53,46 @@ router.put('/update-profile/:userId', auth, UserController.update_user_profile);
  */
 router.post('/book/:userId', auth, UserController.book_photographer);
 
+/*  @route     GET api/users/getbook
+    @desc      Fetch user Booking
+    @access    Private
+ */
+router.get('/allbook/:userId', auth, UserController.fetch_user_booking);
+
+/*  @route     DELETE api/users/getbook
+    @desc      Delete user Booking
+    @access    Private
+ */
+router.delete('/delete/:userId', auth, UserController.delete_user_booking);
+
+/*  @route     PUT api/users/getbook
+    @desc      Update user Booking
+    @access    Private
+ */
+router.put('/update/:userId', auth, UserController.update_user_booking);
+
+/*  @route     GET api/users/getallbook
+    @desc      Get all user Booking
+    @access    Private
+ */
+router.get('/getall/:userId', auth, UserController.fetch_all_user_booking);
+
+/*  @route     PUT api/users/follow
+    @desc      Follow a user
+    @access    Private
+ */
+
+router.put('/follow', auth, UserController.follow_user)
+
+/*  @route     PUT api/users/unfollow
+    @desc      Unfollow a user
+    @access    Private
+ */
+router.put('/unfollow', auth, UserController.unFollow_user);
+
+/*  @route     GET api/users/unfollow
+    @desc      View other users profile
+    @access    Public
+ */
+router.get('/:userId', UserController.view_other_users_profile);
 module.exports = router;

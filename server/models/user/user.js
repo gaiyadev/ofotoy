@@ -61,6 +61,12 @@ const UserSchema = new mongoose.Schema({
             ref: "User"
         }
     ],
+    following: [
+        {
+            type: ObjectId,
+            ref: "User"
+        }
+    ],
     reg_date: {
         type: Date,
         default: Date.now

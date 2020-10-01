@@ -407,6 +407,190 @@ exports.update_user_profile = async (req, res) => {
 // 3. profile pics (bug)
 //4. follow/ unfollow
 //5 Tag
-//6. fetch all bookies by a single user
-// 7. edit/delete/
-// 8. view single booking
+
+
+/** ===============================================================================================
+ * VIEW BOOKINGS BY A SINGLE USER
+ * ================================================================================================= *
+ */
+exports.fetch_user_booking = async (req, res) => {
+    const userId = req.params.userId;
+    await BookPhotography.findOne({ bookedBy: userId }).then(book => {
+        if (!book) return res.status(400).json({ message: "No booking found" });
+        return res.json({
+            status: true,
+            book
+        });
+    }).catch(err => {
+        return res.json({
+            error: err,
+        });
+    });
+}
+
+/** ===============================================================================================
+ * DELETE BOOKINGS BY A SINGLE USER
+ * ================================================================================================= *
+ */
+
+exports.delete_user_booking = async (req, res) => {
+    const userId = req.params.userId;
+    await BookPhotography.findOneAndDelete({ bookedBy: userId }).then(booking => {
+        if (!booking) {
+            return res.json({
+                message: "Booking not found",
+            });
+        }
+        return res.json({
+            message: "Booking deleted successfully",
+            booking
+        });
+    }).catch(err => {
+        return res.json({
+            message: "Booking not found",
+            error: err,
+        });
+    })
+}
+
+/** ===============================================================================================
+ * UPDATE BOOKINGS BY A SINGLE USER
+ * ================================================================================================= *
+ */
+exports.update_user_booking = async (req, res) => {
+    const userId = req.params.userId;
+    const { time } = req.body;
+
+    const schema = Joi.object({
+        time: Joi.string().required(),
+    });
+    const { error } = schema.validate({
+        time: time,
+    });
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message,
+        });
+    }
+    //
+    await BookPhotography.findOneAndUpdate({ bookedBy: userId }).then(booking => {
+        if (!booking) {
+            return res.status(400).json({
+                error: "Booking not found",
+            });
+        }
+        booking.time = time;
+        booking.save();
+        return res.json({
+            message: "Booking updated successfully",
+            booking
+        });
+    }).catch(err => {
+        return res.status(400).json({
+            error: err,
+        });
+    })
+}
+
+/** ===============================================================================================
+ * FETCH ALL BOOKINGS BY A SINGLE USER
+ * ================================================================================================= *
+ */
+
+exports.fetch_all_user_booking = async (req, res) => {
+    const userId = req.params.userId;
+    await BookPhotography.find({ bookedBy: userId }).then(book => {
+        return res.status(200).json({
+            book: book,
+        });
+    }).catch(err => {
+        return res.status(400).json({
+            error: err,
+            error: "err"
+        });
+    });
+}
+
+/** ===============================================================================================
+ * USER FOLLOW A USER
+ * ================================================================================================= *
+ */
+exports.follow_user = async (req, res) => {
+    await User.findByIdAndUpdate(req.body.followId, {
+        $push: { followers: req.user._id }
+    }, {
+        new: true
+    }, (err) => {
+        if (err) return res.status(400).json({ error: err });
+        //else
+        User.findByIdAndUpdate(req.user._id, {
+            $push: { following: req.body.followId }
+        }, {
+            new: true
+        }).select("-password")
+            .then(result => {
+                return res.json({ result });
+            }).catch(err => {
+                return res.status(400).json({ error: err });
+            });
+    });
+}
+
+/** ===============================================================================================
+ * USER UNFOLLOW A USER
+ * ================================================================================================= *
+ */
+
+exports.unFollow_user = (req, res) => {
+    User.findByIdAndUpdate(req.body.unfollowId, {
+        $push: { followers: req.user._id }
+    }, {
+        new: true
+    }, (err, result) => {
+        if (err) {
+            return res.status(422).json({ error: err })
+        }
+        User.findByIdAndUpdate(req.user._id, {
+            $pull: { following: req.body.unfollowId }
+        }, {
+            new: true
+        }).select("-password")
+            .then(result => {
+                return res.json({
+                    result
+                });
+            }).catch(err => {
+                return res.status(422).json({ error: err })
+            })
+    })
+}
+
+
+/** ===============================================================================================
+ * VIEW OTHER USERS PROFILE
+ * ================================================================================================= *
+ */
+
+exports.view_other_users_profile = async (req, res) => {
+    const id = req.params.userId;
+    await User.findOne({ _id: id }).select("-password")
+        .then(user => {
+            BookPhotography.find({ bookedBy: id }).populate("bookedBy", "_id username")
+                .exec((err, posts) => {
+                    if (err) {
+                        return res.status(400).json({
+                            error: err
+                        });
+                    }
+                    return res.status(200).json({
+                        user,
+                        posts
+                    });
+                })
+
+        }).catch(err => {
+            return res.status(404).json({
+                error: 'User not found',
+            })
+        })
+}
