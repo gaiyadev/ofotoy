@@ -39,7 +39,7 @@ const UserSchema = new mongoose.Schema({
         maxlength: 255,
     },
     dob: {
-        type: Date,
+        type: String,
     },
     profile_image: {
         type: String,

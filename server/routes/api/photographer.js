@@ -41,6 +41,12 @@ router.put('/new-password', PhotographerController.photographer_new_password);
  */
 router.post('/user-profile/:photographerId', auth, PhotographerController.complete_user_registration);
 
+/*  @route     POST api/photographers/update-profile
+    @desc      Update user profile
+    @access    Private
+ */
+router.put('/update-profile/:photographerId', auth, PhotographerController.update_user_profile);
+
 /*  @route     POST api/photographers/book
     @desc      Fetch all bookings base on a photographer
     @access    Private

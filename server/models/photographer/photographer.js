@@ -78,14 +78,14 @@ module.exports.newPhotographer = async (newPhotographer, callback) => {
         newPhotographer.save(callback); //create New Photographer
     });
     //mail
-    // transporter.sendMail({
-    //     to: newPhotographer.email,
-    //     from: 'isukue@gmail.com',
-    //     subject: 'Account created succesfully',
-    //     html: `<p>
-    //           You account has being created successfully
-    //          </p>`
-    // });
+    transporter.sendMail({
+        to: newPhotographer.email,
+        from: 'isukue@gmail.com',
+        subject: 'Account created succesfully',
+        html: `<p>
+              You account has being created successfully
+             </p>`
+    });
 }
 
 

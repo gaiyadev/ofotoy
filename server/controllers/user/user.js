@@ -24,7 +24,7 @@ exports.user_registration = async (req, res) => {
     const schema = Joi.object({
         username: Joi.string().min(4).max(11).required(),
         email: Joi.string().min(5).max(255).required().email(),
-        phone: Joi.required(),
+        phone: Joi.string().max(255).required(),
         password: Joi.string().min(6).max(255).required()
     });
     const { error } = schema.validate({
@@ -66,14 +66,6 @@ exports.user_registration = async (req, res) => {
                         message: "Account created successfully"
                     });
                 });
-            transporter.sendMail({
-                to: newUser.email,
-                from: 'isukue@gmail.com',
-                subject: 'Account created succesfully',
-                html: `<p>
-              You account has being created successfully..(ofotoy)
-             </p>`
-            });
         });
     }).catch(err => {
         console.log(err);
@@ -134,12 +126,14 @@ exports.user_login = async (req, res) => {
  * ================================================================================================= *
  */
 exports.user_change_password = async (req, res) => {
-    const { password } = req.body;
+    const { password, newPassword } = req.body;
     const schema = Joi.object({
-        password: Joi.string().min(6).max(255).required()
+        password: Joi.string().min(6).max(255).required(),
+        newPassword: Joi.string().min(6).max(255).required()
     });
     const { error } = schema.validate({
-        password: password
+        password: password,
+        newPassword: newPassword
     });
 
     if (error) {
@@ -147,11 +141,10 @@ exports.user_change_password = async (req, res) => {
             error: error.details[0].message,
         });
     }
-    const newPassword = req.body.password;
     await User.findOne({ _id: req.params.id })
         .then(user => {
             if (!user) {
-                return res.status(422).json({
+                return res.status(400).json({
                     error: "User doesn't exist"
                 });
             }
@@ -209,10 +202,10 @@ exports.user_reset_password = async (req, res) => {
  * USER UPDATE PASSWORD FROM THE LINK SENT
  * ================================================================================================= *
  */
-exports.new_password = (req, res) => {
+exports.new_password = async (req, res) => {
     const newPassword = req.body.password;
     const sentToken = req.body.token;
-    User.findOne({ resetToken: sentToken, expiresToken: { $gt: Date.now() } })
+    await User.findOne({ resetToken: sentToken, expiresToken: { $gt: Date.now() } })
         .then(user => {
             if (!user) {
                 return res.status(403).json({
@@ -277,7 +270,7 @@ exports.complete_user_registration = async (req, res) => {
         dob: dob,
         fullName: fullName,
         location: location,
-        profile_image: pic
+        // profile_image: pic
     });
     if (error) {
         return res.status(400).json({
@@ -314,22 +307,15 @@ exports.complete_user_registration = async (req, res) => {
  * ================================================================================================= *
  */
 exports.book_photographer = async (req, res) => {
-    const bookedBy = req.params.bookId;
+    const userId = req.params.userId;
     // const photographerBooked;
-    const { email, phone, fullName, location, time } = req.body;
+    const { email, phone, fullName, location } = req.user;
+    const { time } = req.body;
     const schema = Joi.object({
-        email: Joi.string().required().email(),
-        phone: Joi.required(),
-        fullName: Joi.string().required(),
-        location: Joi.string().required(),
         time: Joi.string().required(),
     });
     const { error } = schema.validate({
-        email: email,
-        phone: phone,
-        location: location,
         time: time,
-        fullName: fullName,
     });
     if (error) {
         return res.status(400).json({
@@ -337,21 +323,25 @@ exports.book_photographer = async (req, res) => {
         });
     }
     //
-    await BookPhotography.findOne({ _id: bookedBy }).then(user => {
-        console.log(user);
+    await User.findOne({ _id: userId }).then(user => {
+        if (!user) {
+            return res.status(400).json({
+                error: "User not found",
+            });
+        }
         const newBook = new BookPhotography({
             email: email,
             phone: phone,
             fullName: fullName,
             time: time,
             location: location,
-            bookedBy: bookedBy,
-            photographerBooked: photographerBooked
+            bookedBy: userId,
+            // photographerBooked: photographerBooked
         });
         BookPhotography.BookPhotography(newBook, (err, book) => {
             if (err) return err;
             return res.status(200).json({
-                status: "Sucessful",
+                status: "Book sucessfully ",
                 book
             });
 
@@ -362,3 +352,61 @@ exports.book_photographer = async (req, res) => {
         });
     });
 }
+
+/** ===============================================================================================
+ * USER UPDATE PROFILE
+ * ================================================================================================= *
+ */
+exports.update_user_profile = async (req, res) => {
+    const { dob, fullName, location } = req.body;
+    const id = req.params.userId;
+    const schema = Joi.object({
+        dob: Joi.required(),
+        fullName: Joi.string().min(4).max(255).required(),
+        location: Joi.string().required(),
+    });
+    const { error } = schema.validate({
+        dob: dob,
+        fullName: fullName,
+        location: location,
+        // profile_image: pic
+    });
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message,
+        });
+    }
+    // uploadSingle(req, res, (err) => {
+    //     if (err) return res.json.status(400)({ error_code: 1, err_desc: err });
+    //     res.json(req.file);
+    // });
+    await User.findByIdAndUpdate(id).then(user => {
+        if (!user) {
+            return res.status(400).json({
+                error: "User not found",
+            });
+        }
+        user.dob = dob;
+        user.location = location;
+        user.fullName = fullName
+        user.save();
+        return res.json({
+            message: "Profile updated successfully",
+            user
+        });
+    }).catch(err => {
+        return res.status(400).json({
+            error: err,
+        });
+    })
+}
+
+//TODO
+// 1. Booking not yet complete
+//2. Payment gateway integrstion
+// 3. profile pics (bug)
+//4. follow/ unfollow
+//5 Tag
+//6. fetch all bookies by a single user
+// 7. edit/delete/
+// 8. view single booking

@@ -66,14 +66,14 @@ exports.photographer_registration = async (req, res) => {
                         message: "Account created successfully"
                     });
                 });
-            transporter.sendMail({
-                to: newUser.email,
-                from: 'isukue@gmail.com',
-                subject: 'Account created succesfully',
-                html: `<p>
-              You account has being created successfully..(ofotoy)
-             </p>`
-            });
+            // transporter.sendMail({
+            //     to: newUser.email,
+            //     from: 'isukue@gmail.com',
+            //     subject: 'Account created succesfully',
+            //     html: `<p>
+            //   You account has being created successfully..(ofotoy)
+            //  </p>`
+            // });
         });
     }).catch(err => {
         console.log(err);
@@ -397,6 +397,55 @@ exports.fetch_all_post = async (req, res) => {
         return res.status(200).json({
             status: "fail",
             error: err
+        });
+    })
+}
+
+
+/** ===============================================================================================
+ * PHOTOGRAPHER UPDATE PROFILE
+ * ================================================================================================= *
+ */
+exports.update_user_profile = async (req, res) => {
+    const { dob, fullName, location } = req.body;
+    const id = req.params.photographerId;
+    const schema = Joi.object({
+        dob: Joi.required(),
+        fullName: Joi.string().min(4).max(255).required(),
+        location: Joi.string().required(),
+    });
+    const { error } = schema.validate({
+        dob: dob,
+        fullName: fullName,
+        location: location,
+        // profile_image: pic
+    });
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message,
+        });
+    }
+    // uploadSingle(req, res, (err) => {
+    //     if (err) return res.json.status(400)({ error_code: 1, err_desc: err });
+    //     res.json(req.file);
+    // });
+    await Photographer.findByIdAndUpdate(id).then(photographer => {
+        if (!photographer) {
+            return res.status(400).json({
+                error: "Photographer not found",
+            });
+        }
+        photographer.dob = dob;
+        photographer.location = location;
+        photographer.fullName = fullName
+        photographer.save();
+        return res.json({
+            message: "Profile updated successfully",
+            photographer
+        });
+    }).catch(err => {
+        return res.status(400).json({
+            error: err,
         });
     })
 }

@@ -31,8 +31,7 @@ const BookPhotographySchema = new mongoose.Schema({
         maxlength: 255,
     },
     bookedBy: {
-        type: ObjectId,
-        ref: "User"
+        type: ObjectId
     },
     photographerBooked: {
         type: ObjectId,
@@ -53,7 +52,7 @@ module.exports.BookPhotography = async (newBooking, callback) => {
     await newBooking.save(callback); //create New Booking
     transporter.sendMail({
         to: user.email,
-        from: 'no-reply@ofotoy.com',
+        from: 'isukue@gmail.com',
         subject: 'Booked successfully',
         html: `<p>
                  You are recieving this mail because you requested for Photography session
