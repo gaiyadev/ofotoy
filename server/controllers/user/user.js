@@ -401,14 +401,6 @@ exports.update_user_profile = async (req, res) => {
     })
 }
 
-//TODO
-// 1. Booking not yet complete
-//2. Payment gateway integrstion
-// 3. profile pics (bug)
-//4. follow/ unfollow
-//5 Tag
-
-
 /** ===============================================================================================
  * VIEW BOOKINGS BY A SINGLE USER
  * ================================================================================================= *
@@ -594,3 +586,11 @@ exports.view_other_users_profile = async (req, res) => {
             })
         })
 }
+
+
+//TODO
+// 1. Booking not yet complete
+//2. Payment gateway integrstion
+// 3. profile pics (bug)
+//4. follow/ unfollow (buggy)
+//5 Tag
