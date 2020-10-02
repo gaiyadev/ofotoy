@@ -15,6 +15,8 @@ const transporter = nodemailer.createTransport(sgTransport({
     }
 }));
 
+
+
 /** ===============================================================================================
  * USER REGISTRATION TO THE SYSTEM
  * ================================================================================================= *
@@ -584,7 +586,7 @@ exports.view_other_users_profile = async (req, res) => {
             return res.status(404).json({
                 error: 'User not found',
             })
-        })
+        });
 }
 
 

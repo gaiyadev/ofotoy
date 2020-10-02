@@ -4,12 +4,29 @@ const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
 const { ObjectId } = mongoose.Schema.Types;
+const Nexmo = require('nexmo');
+const fs = require('fs');
+const path = require('path');
 
+
+// SMS api
+const nexmo = new Nexmo({
+    apiKey: 'b7be46ed',
+    apiSecret: 'Il7fCTVNA3eOzA2Z',
+    applicationId: "04fb614d-f759-491e-bcdc-27841875500e"
+});
+
+
+// nexmo.message.sendSms(from, to, text);
 const transporter = nodemailer.createTransport(sgTransport({
     auth: {
         api_key: process.env.SENDGRID_API_KEY
     }
 }));
+
+
+
+
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -82,14 +99,29 @@ module.exports.newUser = async (newUser, callback) => {
         newUser.password = hash;  //set hash password
         newUser.save(callback); //create New User
     });
-    // transporter.sendMail({
-    //     to: newUser.email,
-    //     from: 'isukue@gmail.com',
-    //     subject: 'Account created succesfully',
-    //     html: `<p>
-    //           You account has being created successfully..(ofotoy)
-    //          </p>`
-    // });
+    transporter.sendMail({
+        to: newUser.email,
+        from: 'isukue@gmail.com',
+        subject: 'Account created succesfully',
+        html: `<p>
+              You account has being created successfully..(ofotoy)
+             </p>`
+    });
+    //sms
+    const from = 'Ofotoy';
+    const to = newUser.phone;
+    const text = 'Hello from ofotoy SMS API sms test on ofotoy app';
+    nexmo.message.sendSms(from, to, text, (err, responseData) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (responseData.messages[0]['status'] === "0") {
+                console.log("Message sent successfully.");
+            } else {
+                console.log(`Message failed with error: ${responseData.messages[0]['error-text']}`);
+            }
+        }
+    })
 }
 
 
