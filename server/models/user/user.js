@@ -9,24 +9,20 @@ const fs = require('fs');
 const path = require('path');
 
 
-// SMS api
+// Nexmo SMS api setup
+// nexmo.message.sendSms(from, to, text);
 const nexmo = new Nexmo({
-    apiKey: 'b7be46ed',
-    apiSecret: 'Il7fCTVNA3eOzA2Z',
-    applicationId: "04fb614d-f759-491e-bcdc-27841875500e"
+    apiKey: process.env.NEXMO_APIKEY,
+    apiSecret: process.env.NEXMO_APISECRET,
+    applicationId: process.env.NEXMO_applicationId
 });
 
-
-// nexmo.message.sendSms(from, to, text);
+// Sendgrid APi setup
 const transporter = nodemailer.createTransport(sgTransport({
     auth: {
         api_key: process.env.SENDGRID_API_KEY
     }
 }));
-
-
-
-
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -84,6 +80,11 @@ const UserSchema = new mongoose.Schema({
             ref: "User"
         }
     ],
+    userType: {
+        type: String,
+        enum: ["User", "Photographer"],
+        required: true,
+    },
     reg_date: {
         type: Date,
         default: Date.now
@@ -107,7 +108,7 @@ module.exports.newUser = async (newUser, callback) => {
               You account has being created successfully..(ofotoy)
              </p>`
     });
-    //sms
+    sms
     const from = 'Ofotoy';
     const to = newUser.phone;
     const text = 'Hello from ofotoy SMS API sms test on ofotoy app';

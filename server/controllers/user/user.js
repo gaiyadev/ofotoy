@@ -16,23 +16,24 @@ const transporter = nodemailer.createTransport(sgTransport({
 }));
 
 
-
 /** ===============================================================================================
  * USER REGISTRATION TO THE SYSTEM
  * ================================================================================================= *
  */
 exports.user_registration = async (req, res) => {
-    const { username, email, phone, password } = req.body;
+    const { username, email, phone, password, userType } = req.body;
     const schema = Joi.object({
         username: Joi.string().min(4).max(11).required(),
         email: Joi.string().min(5).max(255).required().email(),
         phone: Joi.string().max(255).required(),
+        userType: Joi.string(),
         password: Joi.string().min(6).max(255).required()
     });
     const { error } = schema.validate({
         username: username,
         email: email,
         phone: phone,
+        userType: userType,
         password: password
     });
     if (error) {
@@ -46,12 +47,19 @@ exports.user_registration = async (req, res) => {
             username: username,
             email: email,
             phone: phone,
+            userType: userType,
             password: password,
         });
         User.newUser(newUser, (err, user) => {
             if (err) return err;
             // success login ... Generating jwt for auth
-            jwt.sign({ _id: user._id, email: user.email, username: user.username, phone: user.phone },
+            jwt.sign({
+                _id: user._id,
+                email: user.email,
+                username: user.username,
+                phone: user,
+                userType: user.userType
+            },
                 process.env.JWT_SECRET,
                 {
                     expiresIn: 3600
@@ -63,7 +71,9 @@ exports.user_registration = async (req, res) => {
                             _id: user._id,
                             email: user.email,
                             username: user.username,
-                            phone: user.phone
+                            phone: user.phone,
+                            userType: user.userType
+
                         },
                         message: "Account created successfully"
                     });
@@ -94,14 +104,20 @@ exports.user_login = async (req, res) => {
         });
     }
     await User.find().or([{ email: email }, { phone: phone }]).then(user => {
-        if (!user) return res.status(400).json({ error: 'Username or password is invalid' });
+        if (!user) return res.status(400).json({ error: 'Invalid Username or Password.' });
         User.comparePassword(password, user[0]['password'], (err, isMatch) => {
             if (err) throw err;
             if (!isMatch) {
-                return res.status(400).json({ error: "Mobile Number or Password is invalid" });
+                return res.status(400).json({ error: "Invalid Username or Password." });
             } else {
                 // success login ... Generating jwt for auth
-                jwt.sign({ _id: user[0]['_id'], email: user[0]['email'], username: user[0]['username'], phone: user[0]['phone'] },
+                jwt.sign({
+                    _id: user[0]['_id'],
+                    email: user[0]['email'],
+                    username: user[0]['username'],
+                    phone: user[0]['phone'],
+                    userType: user[0]['userType']
+                },
                     process.env.JWT_SECRET,
                     {
                         expiresIn: 3600
@@ -113,7 +129,8 @@ exports.user_login = async (req, res) => {
                                 _id: user[0]['_id'],
                                 email: user[0]['email'],
                                 username: user[0]['username'],
-                                phone: user[0]['phone']
+                                phone: user[0]['phone'],
+                                userType: user[0]['userType']
                             },
                             message: "LogIn successfully"
                         });
@@ -162,7 +179,6 @@ exports.user_change_password = async (req, res) => {
         }).catch(err => console.log(err));
 }
 
-
 /** ===============================================================================================
  * USER FORGOT PASSWORD LINK TO BE SEND
  * ================================================================================================= *
@@ -180,7 +196,7 @@ exports.user_reset_password = async (req, res) => {
                 }
                 user.resetToken = token;
                 user.expiresToken = Date.now() + 360000;
-                user.save().then(result => {
+                user.save().then(() => {
                     transporter.sendMail({
                         to: user.email,
                         from: 'isukue@gmail.com',
@@ -211,7 +227,7 @@ exports.new_password = async (req, res) => {
         .then(user => {
             if (!user) {
                 return res.status(403).json({
-                    error: "Try again. session ezpired"
+                    error: "Try again. session expired"
                 });
             }
             bcrypt.hash(newPassword, 10).then(hashPassword => {
@@ -279,10 +295,10 @@ exports.complete_user_registration = async (req, res) => {
             error: error.details[0].message,
         });
     }
-    uploadSingle(req, res, (err) => {
-        if (err) return res.json.status(400)({ error_code: 1, err_desc: err });
-        res.json(req.file);
-    });
+    // uploadSingle(req, res, (err) => {
+    //     if (err) return res.json.status(400)({ error_code: 1, err_desc: err });
+    //     res.json(req.file);
+    // });
     await User.findByIdAndUpdate(id).then(user => {
         if (!user) {
             return res.status(400).json({
@@ -311,7 +327,7 @@ exports.complete_user_registration = async (req, res) => {
 exports.book_photographer = async (req, res) => {
     const userId = req.params.userId;
     // const photographerBooked;
-    const { email, phone, fullName, location } = req.user;
+    const { email, phone, fullName, location, userType } = req.user;
     const { time } = req.body;
     const schema = Joi.object({
         time: Joi.string().required(),
@@ -325,7 +341,7 @@ exports.book_photographer = async (req, res) => {
         });
     }
     //
-    await User.findOne({ _id: userId }).then(user => {
+    await User.findOne({ _id: userId, userType: "User" }).then(user => {
         if (!user) {
             return res.status(400).json({
                 error: "User not found",
@@ -338,12 +354,13 @@ exports.book_photographer = async (req, res) => {
             time: time,
             location: location,
             bookedBy: userId,
+            userType: userType
             // photographerBooked: photographerBooked
         });
         BookPhotography.BookPhotography(newBook, (err, book) => {
             if (err) return err;
             return res.status(200).json({
-                status: "Book sucessfully ",
+                status: "Photography session Booked sucessfully ",
                 book
             });
 
@@ -409,7 +426,7 @@ exports.update_user_profile = async (req, res) => {
  */
 exports.fetch_user_booking = async (req, res) => {
     const userId = req.params.userId;
-    await BookPhotography.findOne({ bookedBy: userId }).then(book => {
+    await BookPhotography.findOne({ bookedBy: userId, userType: "User" }).then(book => {
         if (!book) return res.status(400).json({ message: "No booking found" });
         return res.json({
             status: true,
@@ -429,7 +446,7 @@ exports.fetch_user_booking = async (req, res) => {
 
 exports.delete_user_booking = async (req, res) => {
     const userId = req.params.userId;
-    await BookPhotography.findOneAndDelete({ bookedBy: userId }).then(booking => {
+    await BookPhotography.findOneAndDelete({ bookedBy: userId, userType: "User" }).then(booking => {
         if (!booking) {
             return res.json({
                 message: "Booking not found",
@@ -467,7 +484,7 @@ exports.update_user_booking = async (req, res) => {
         });
     }
     //
-    await BookPhotography.findOneAndUpdate({ bookedBy: userId }).then(booking => {
+    await BookPhotography.findOneAndUpdate({ bookedBy: userId, userType: "User" }).then(booking => {
         if (!booking) {
             return res.status(400).json({
                 error: "Booking not found",
@@ -493,7 +510,7 @@ exports.update_user_booking = async (req, res) => {
 
 exports.fetch_all_user_booking = async (req, res) => {
     const userId = req.params.userId;
-    await BookPhotography.find({ bookedBy: userId }).then(book => {
+    await BookPhotography.find({ bookedBy: userId, userType: 'User' }).then(book => {
         return res.status(200).json({
             book: book,
         });
@@ -514,10 +531,10 @@ exports.follow_user = async (req, res) => {
         $push: { followers: req.user._id }
     }, {
         new: true
-    }, (err) => {
+    }, async (err) => {
         if (err) return res.status(400).json({ error: err });
         //else
-        User.findByIdAndUpdate(req.user._id, {
+        await User.findByIdAndUpdate(req.user._id, {
             $push: { following: req.body.followId }
         }, {
             new: true
@@ -540,11 +557,11 @@ exports.unFollow_user = (req, res) => {
         $push: { followers: req.user._id }
     }, {
         new: true
-    }, (err, result) => {
+    }, async (err, result) => {
         if (err) {
             return res.status(422).json({ error: err })
         }
-        User.findByIdAndUpdate(req.user._id, {
+        await User.findByIdAndUpdate(req.user._id, {
             $pull: { following: req.body.unfollowId }
         }, {
             new: true
@@ -584,7 +601,7 @@ exports.view_other_users_profile = async (req, res) => {
 
         }).catch(err => {
             return res.status(404).json({
-                error: 'User not found',
+                error: `User not found ${err}`,
             })
         });
 }
@@ -596,3 +613,11 @@ exports.view_other_users_profile = async (req, res) => {
 // 3. profile pics (bug)
 //4. follow/ unfollow (buggy)
 //5 Tag
+
+
+
+/**
+ *
+ *
+ */
+

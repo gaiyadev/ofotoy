@@ -90,9 +90,12 @@ router.put('/follow', auth, UserController.follow_user)
  */
 router.put('/unfollow', auth, UserController.unFollow_user);
 
-/*  @route     GET api/users/unfollow
+/*  @route     GET api/users/:userId
     @desc      View other users profile
     @access    Public
  */
+
 router.get('/:userId', UserController.view_other_users_profile);
+
+
 module.exports = router;

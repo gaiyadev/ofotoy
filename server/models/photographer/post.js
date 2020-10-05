@@ -12,6 +12,10 @@ const PostSchema = new mongoose.Schema({
         type: ObjectId,
         ref: "Photographer"
     },
+    picture: {
+        type: String,
+        required: true,
+    },
     created_at: {
         type: Date,
         default: Date.now

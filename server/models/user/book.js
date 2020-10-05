@@ -36,6 +36,10 @@ const BookPhotographySchema = new mongoose.Schema({
     photographerBooked: {
         type: ObjectId,
     },
+    userType: {
+        type: String,
+        required: true
+    },
     time: {
         type: String,
     },
@@ -45,13 +49,13 @@ const BookPhotographySchema = new mongoose.Schema({
     }
 });
 
-const BookPhotography = mongoose.model('BookPhotography', BookPhotographySchema);
+const BookPhotography = mongoose.model('Booking', BookPhotographySchema);
 module.exports = BookPhotography;
 
 module.exports.BookPhotography = async (newBooking, callback) => {
     await newBooking.save(callback); //create New Booking
     transporter.sendMail({
-        to: user.email,
+        to: newBooking.email,
         from: 'isukue@gmail.com',
         subject: 'Booked successfully',
         html: `<p>
