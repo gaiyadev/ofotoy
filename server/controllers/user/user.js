@@ -1,5 +1,6 @@
 const User = require('../../models/user/user');
 const BookPhotography = require('../../models/user/book');
+const Comment = require('../../models/user/rating');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
@@ -317,7 +318,7 @@ exports.complete_user_registration = async (req, res) => {
         return res.status(400).json({
             error: err,
         });
-    })
+    });
 }
 
 /** ===============================================================================================
@@ -538,12 +539,11 @@ exports.follow_user = async (req, res) => {
             $push: { following: req.body.followId }
         }, {
             new: true
-        }).select("-password")
-            .then(result => {
-                return res.json({ result });
-            }).catch(err => {
-                return res.status(400).json({ error: err });
-            });
+        }).select("-password").then(result => {
+            return res.json({ result });
+        }).catch(err => {
+            return res.status(400).json({ error: err });
+        });
     });
 }
 
@@ -557,22 +557,20 @@ exports.unFollow_user = (req, res) => {
         $push: { followers: req.user._id }
     }, {
         new: true
-    }, async (err, result) => {
-        if (err) {
-            return res.status(422).json({ error: err })
-        }
+    }, async (err) => {
+        if (err) return res.status(422).json({ error: err })
+
         await User.findByIdAndUpdate(req.user._id, {
             $pull: { following: req.body.unfollowId }
         }, {
             new: true
-        }).select("-password")
-            .then(result => {
-                return res.json({
-                    result
-                });
-            }).catch(err => {
-                return res.status(422).json({ error: err })
-            })
+        }).select("-password").then(result => {
+            return res.json({
+                result
+            });
+        }).catch(err => {
+            return res.status(422).json({ error: err })
+        });
     })
 }
 
@@ -607,6 +605,38 @@ exports.view_other_users_profile = async (req, res) => {
 }
 
 
+/** ===============================================================================================
+ * USERS RATING
+ * ================================================================================================= *
+ */
+exports.comments_and_rating = async (req, res) => {
+    const { userId, email } = req.user;
+    const { comment } = req.body;
+
+    const schema = Joi.object({
+        comment: Joi.string().required(),
+    });
+    const { error } = schema.validate({
+        comment: comment,
+    });
+
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message,
+        });
+    }
+    //..
+    const newComment = Comment({
+        comment: comment,
+        email: email,
+        ratedBy: userId,
+    });
+    await Comment.newComment(newComment, (err, comment) => {
+        if (err) return err;
+        return res.json({ comment });
+    });
+}
+
 //TODO
 // 1. Booking not yet complete
 //2. Payment gateway integrstion
@@ -615,9 +645,12 @@ exports.view_other_users_profile = async (req, res) => {
 //5 Tag
 
 
-
-/**
- *
- *
+/** ===============================================================================================
+ * DEVELOPER: GAIYA M. OBED
+ * LOCATION: KADUNA
+ * STACKS : JS
+ * YEAR 2020
+ * ================================================================================================= *
  */
+
 

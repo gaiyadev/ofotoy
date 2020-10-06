@@ -97,5 +97,10 @@ router.put('/unfollow', auth, UserController.unFollow_user);
 
 router.get('/:userId', UserController.view_other_users_profile);
 
+/*  @route     POST api/users/rating
+    @desc      Rate and comment users profile
+    @access    Public
+ */
+router.post('rating', auth, UserController.comments_and_rating)
 
 module.exports = router;
