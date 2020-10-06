@@ -36,6 +36,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
         maxlength: 255,
+        lowercase: true
     },
     phone: {
         type: String,
@@ -84,6 +85,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["User", "Photographer"],
         required: true,
+        default: "User"
     },
     reg_date: {
         type: Date,

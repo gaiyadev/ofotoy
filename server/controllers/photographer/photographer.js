@@ -137,7 +137,7 @@ exports.delete_post = async (req, res) => {
  * ================================================================================================= *
  */
 
-exports.get_single_picture = async(req, res) => {
+exports.get_single_picture = async (req, res) => {
     const id = req.params.id;
     await Post.findOne({ postedBy: id, userType: "Photographer" }).then(post => {
         if (!post) return res.status(400).json({ message: "No post found" });
@@ -147,6 +147,50 @@ exports.get_single_picture = async(req, res) => {
         });
     }).catch(err => {
         return res.json({
+            error: err,
+        });
+    });
+}
+
+/** ===============================================================================================
+ * UPDATE A SINGLE PICTURE
+ * ================================================================================================= *
+ */
+exports.update_picture = async (req, res) => {
+    const userId = req.params.id;
+    const { id } = req.user._id;
+    const { description, picture } = req.body;
+
+    const schema = Joi.object({
+        description: Joi.string().required(),
+        picture: Joi.string(),
+    });
+
+    const { error } = schema.validate({
+        description: description,
+        picture: picture
+    });
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message,
+        });
+    }
+    //
+    await Post.findOneAndUpdate({ postedBy: userId, userType: "Photographer" }).then(post => {
+        if (!post) {
+            return res.status(400).json({
+                error: "Booking not found",
+            });
+        }
+        post.description = description;
+        post.picture = picture
+        post.save();
+        return res.json({
+            message: "Post updated successfully",
+            post
+        });
+    }).catch(err => {
+        return res.status(400).json({
             error: err,
         });
     });

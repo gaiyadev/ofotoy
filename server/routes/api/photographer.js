@@ -28,5 +28,10 @@ router.delete('/post/:id', auth, PhotographerController.delete_post)
     @access    Private
  */
 router.get('/post/:id', auth, PhotographerController.get_single_picture)
+/*  @route     POST api/photographers/post/id
+    @desc      GET picture a photographer
+    @access    Private
+ */
+router.put('/post/:id', auth, PhotographerController.update_picture)
 
 module.exports = router;
